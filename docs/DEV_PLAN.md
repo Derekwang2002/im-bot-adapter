@@ -1,136 +1,143 @@
-# IM Bot Adapter Development Plan
+# IM Bot Delivery Plan
 
 ## 1. Goal and Scope
 
-Build a thin IM Bot Adapter layer that connects mainstream IM platforms to the Bridge layer. The adapter is responsible for platform event ingestion, identity extraction, message normalization, Bridge communication, and rendering Bridge replies back to the source platform.
+The current phase is to create and configure mainstream IM platform bots. Work should focus on developer console setup, bot/app permissions, webhook or event callback configuration, local smoke testing, and payload fixture capture.
 
-The adapter must not own CALL-E business logic. OAuth binding, authorization state, preview, confirmation, call execution, and long-running webhook updates belong in Bridge / CALL-E services.
+Adapter implementation is temporarily out of scope. Shared contracts, Bridge client code, message normalization, reply rendering, CALL-E OAuth, preview, confirmation, call execution, and webhook business logic belong to a later Adapter / Bridge phase.
 
 ## 2. Architecture Boundary
 
 ```text
 IM Platform Bot
-  -> Bot Adapter
-  -> Bridge API / Event Bus
-  -> CALL-E auth + SDK/WebHook layer
+  -> webhook / event callback smoke endpoint
+  -> sanitized payload fixture
+  -> later Adapter / Bridge phase
 ```
 
-Core contracts:
+Current deliverables:
 
-- `InboundIMMessage`: normalized inbound message sent from adapters to Bridge.
-- `BridgeReply`: platform-neutral reply returned by Bridge.
-- `platformUserKey`: stable user key, for example `discord:user:123456789`.
-- `conversationId`: reply path only; it must not be used as the authorization key.
+- Created platform bot/app.
+- Required permissions and scopes recorded.
+- Webhook/event callback connected to a local or deployed smoke endpoint.
+- Minimal send/receive or interaction behavior verified.
+- Sanitized event fixtures saved for future adapter development.
 
-Platform-specific differences must stay inside adapter packages: event format, signature verification, message send API, interactive UI support, retry behavior, and rate limits.
+Do not build platform adapter packages yet unless needed for a minimal smoke endpoint.
 
 ## 3. Proposed Repository Structure
 
 ```text
 docs/
-  architecture.md
-  adapter-contract.md
   platform-notes/
-
-pakages/
-  contracts/
-  bridge-client/
-  shared/
-  discord-bot/
-  slack-bot/
-  feishu-bot/
-  telegram-bot/
-  imessage-adapter/
+    discord.md
+    slack.md
+    feishu.md
+    telegram.md
+    imessage.md
 
 examples/
-  bridge-mock/
   payloads/
 
+scripts/
+  smoke-webhook/
+
 test/
-  contract/
-  adapters/
+  smoke/
 ```
 
-Note: the current repository uses `pakages/`. Keep it until the project decides to rename it to `packages/`; if renamed, update imports, documentation, scripts, and CI in one change.
+The existing `pakages/` skeleton is not part of the active scope. Keep it untouched until the Adapter phase starts.
 
 ## 4. Delivery Milestones
 
 ### M0: Project Foundation
 
-- Add TypeScript workspace configuration.
-- Add package manager scripts for build, test, lint, and local development.
-- Add `.env.example` with variable names only.
-- Add shared logging and configuration conventions.
+- Add `.env.example` with bot credential variable names only.
+- Add `docs/platform-notes/` templates for each platform.
+- Add a fixture redaction checklist.
+- Add a minimal webhook smoke endpoint only if needed for event verification.
 
 Exit criteria:
 
-- `npm run build`, `npm test`, and `npm run lint` are available.
-- Empty package skeletons compile.
+- Setup notes exist for every target platform.
+- No real token, signing secret, webhook URL, phone number, or user email is committed.
 
-### M1: Shared Contracts and Bridge Client
+### M1: Shared Bot Setup Artifacts
 
-- Define `InboundIMMessage`, `BridgeReply`, platform enum/types, and action schema.
-- Implement `platformUserKey` helpers.
-- Implement Bridge HTTP client with timeout, retry, and typed errors.
-- Add mock Bridge server for local adapter testing.
-
-Exit criteria:
-
-- Contract tests validate required fields and invalid payloads.
-- Bridge client tests cover success, timeout, retry, and error responses.
-
-### M2: Discord Adapter P0
-
-- Receive mention and slash command events.
-- Verify Discord interaction signatures.
-- Normalize user, channel/thread, message, timestamp, and text.
-- Render text, auth links, confirm/cancel actions, and error replies.
-- Prevent bot message loops and deduplicate retries.
+- Define standard platform note structure: app creation, scopes, webhook URL, local tunnel, test account, known risks.
+- Define fixture naming and redaction rules.
+- Document local tunneling choices such as `ngrok` or Cloudflare Tunnel.
+- Document manual smoke test steps.
 
 Exit criteria:
 
-- Discord payload fixtures pass normalization tests.
-- Local adapter can call mock Bridge and render a reply.
+- A contributor can create a new platform note without guessing required sections.
+- Fixture examples are sanitized and reproducible.
 
-### M3: Slack Adapter P0
+### M2: Discord Bot P0
 
-- Support Events API, slash commands, and Block Kit actions.
-- Verify Slack request signatures.
-- Normalize team, user, channel, thread, message, timestamp, and text.
-- Respect Slack's short acknowledgement window; defer Bridge work when needed.
-- Render Block Kit cards and fallback text.
-
-Exit criteria:
-
-- Slack fixtures pass normalization and signature tests.
-- Interactive actions produce expected `BridgeReply` callbacks.
-
-### M4: P1 Adapter Skeletons
-
-- Add Feishu/Lark, Telegram, and iMessage skeleton packages.
-- Document platform-specific auth, webhook, and identity risks.
-- Implement minimal text-only flow where practical.
+- Create Discord application and bot user.
+- Enable required intents and interactions.
+- Configure slash commands and local callback URL.
+- Invite bot to a test server with minimum permissions.
+- Capture sanitized mention, slash command, and button payloads.
 
 Exit criteria:
 
-- Skeletons compile.
-- Platform notes document required credentials, event types, and known limitations.
+- Mention and slash command reach the smoke endpoint.
+- A simple interaction response can be returned.
+- Bot-authored messages are observed and documented for future filtering.
 
-### M5: Hardening and Release Readiness
+### M3: Slack Bot P0
 
-- Add structured logs, request IDs, and correlation IDs.
-- Add platform-level rate limit and retry handling.
-- Add deployment notes and operational runbook.
-- Add CI for build, lint, and tests.
+- Create Slack app.
+- Enable Events API, slash commands, interactivity, and required bot scopes.
+- Install app to a test workspace.
+- Configure event and action callback URLs.
+- Capture sanitized event, slash command, and Block Kit action payloads.
 
 Exit criteria:
 
-- CI passes on a clean checkout.
-- README documents local setup and supported platforms.
+- Slack URL verification passes.
+- Events and actions reach the smoke endpoint.
+- Slack response timing constraints are documented.
+
+### M4: Feishu / Lark and Telegram Bots P1
+
+- Create Feishu/Lark internal app and configure message events / card callbacks.
+- Create Telegram bot with BotFather and configure webhook.
+- Capture sanitized message and interaction payloads for both platforms.
+- Document permission, event subscription, privacy mode, and deployment constraints.
+
+Exit criteria:
+
+- Feishu/Lark message events reach the smoke endpoint.
+- Telegram text updates reach the smoke endpoint.
+- Required production approval or public URL constraints are documented.
+
+### M5: iMessage Feasibility P2
+
+- Choose a feasible iMessage automation approach.
+- Document host OS, account, phone/handle identity, and operational limitations.
+- Verify basic receive/send if the target environment allows it.
+
+Exit criteria:
+
+- iMessage is either verified with a minimal flow or explicitly marked blocked with reasons.
+
+### M6: Adapter Handoff
+
+- Summarize payload shapes, identity fields, reply capabilities, retry behavior, and rate limits.
+- Create backlog items for adapter contracts and implementation.
+- Keep adapter code out of this phase unless approved separately.
+
+Exit criteria:
+
+- Future adapter work can start from documented platform setup and sanitized fixtures.
 
 ## 5. Platform Bot Setup Plan
 
-This project must track the creation and configuration of each IM bot application, not only adapter code. Treat bot setup as a release prerequisite for each platform.
+This project currently prioritizes the creation and configuration of each IM bot application. Adapter code is deferred.
 
 ### Shared Setup Requirements
 
@@ -156,17 +163,17 @@ This project must track the creation and configuration of each IM bot applicatio
 - `docs/platform-notes/<platform>.md` with app creation steps, scopes, webhook settings, and risks.
 - `examples/payloads/<platform>-*.json` sanitized fixtures.
 - `.env.example` entries for required variables.
-- Adapter smoke test against `examples/bridge-mock`.
+- Smoke test proving the platform bot can send events to the configured endpoint.
 
 ## 6. Testing Plan
 
 ### Test Layers
 
-- Unit tests: pure functions such as normalization, key generation, reply rendering, and signature verification.
-- Contract tests: validate `InboundIMMessage` and `BridgeReply` schema compatibility.
-- Adapter tests: feed real platform payload fixtures into adapters and assert normalized output.
-- Bridge client tests: use mocked HTTP responses for success, failure, timeout, and retry behavior.
-- Integration tests: run an adapter against `examples/bridge-mock` and verify outbound platform renderer calls.
+- Manual smoke tests: prove each platform bot can send events to the configured endpoint.
+- Fixture checks: confirm captured payloads are sanitized and stored under `examples/payloads/`.
+- Configuration checks: verify required scopes, event subscriptions, callback URLs, and local tunnel settings are documented.
+- Security checks: confirm no real token, signing secret, webhook URL, phone number, or user email is committed.
+- Deferred tests: adapter unit, contract, Bridge client, and reply rendering tests belong to the later Adapter phase.
 
 ### Fixture Strategy
 
@@ -188,36 +195,33 @@ Fixtures must not contain real tokens, user emails, phone numbers, webhook URLs,
 
 ### Required Coverage Areas
 
-- Identity extraction binds authorization to the sender, not the channel or group.
-- Bot-authored events are ignored.
-- Retry events are idempotent.
-- Unsupported UI actions degrade to text.
-- Signature verification rejects invalid or stale requests.
-- Bridge errors render user-readable platform replies.
+- Bot/app can be created by following the platform note.
+- Required scopes and callback settings are documented.
+- Event delivery reaches the smoke endpoint.
+- Interactive callback delivery is verified where the platform supports it.
+- Fixture redaction is complete before committing.
+- Known blockers are recorded in the platform note.
 
 ### Suggested Commands
 
 Once tooling exists, standardize these scripts:
 
 ```bash
-npm run build
-npm test
-npm run test:contract
-npm run test:adapters
+npm run smoke:webhook
+npm run fixtures:check
 npm run lint
 ```
 
-All milestone PRs should include the relevant command output in the PR description.
+All milestone PRs should include manual smoke test evidence and fixture names.
 
 ## 7. Implementation Rules
 
-- Keep adapters thin: `platform event -> InboundIMMessage` and `BridgeReply -> platform message`.
-- Do not store CALL-E OAuth tokens in adapter packages.
-- Do not put CALL-E call execution logic in platform adapters.
-- Validate webhook signatures before parsing or trusting payloads.
-- Use `messageId` or platform interaction IDs for idempotency.
-- Use `correlationId` across adapter logs and Bridge calls.
-- Provide text fallback for every interactive reply type.
+- Do not implement full Adapter behavior in this phase.
+- Do not store CALL-E OAuth tokens or platform bot secrets in the repository.
+- Do not put CALL-E call execution logic in bot setup scripts.
+- Keep platform notes specific enough that another contributor can recreate the bot setup.
+- Capture fixtures only after redacting tokens, user identifiers, emails, phone numbers, and webhook URLs.
+- Record platform limits such as callback timeouts, public URL requirements, app review needs, and rate limits.
 
 ## 8. Changelog Process
 
@@ -236,6 +240,12 @@ Format:
 If no test command exists yet, write `Tested: not run; tooling not added yet`.
 
 ## 9. Changelog
+
+### 2026-06-11 - Re-scope Plan to Bot Creation
+
+- Changed: reframed the plan and README around platform bot creation and configuration; moved adapter implementation, Bridge client, and contract work into a deferred phase.
+- Tested: verified the source Feishu document reflects the bot-first scope at revision 35.
+- Notes: update was made after clarifying that the primary work is bot creation, not adapter development.
 
 ### 2026-06-11 - Add Platform Bot Setup Plan
 

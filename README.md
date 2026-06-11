@@ -1,8 +1,8 @@
 # IM Bot Adapter
 
-Thin adapter layer for connecting IM platform bots to the CALL-E Bridge.
+Bot-first workspace for creating and configuring IM platform bots that will later connect to the CALL-E Bridge.
 
-The adapter receives platform events, extracts platform identity, normalizes messages into a shared contract, sends them to Bridge, and renders Bridge replies back to the source IM platform. It does not own CALL-E OAuth, authorization state, preview, confirmation, call execution, or webhook business logic.
+The current focus is platform bot creation: developer console setup, permissions, webhook/event callback configuration, local smoke testing, and sanitized payload fixtures. Adapter implementation, Bridge client code, shared contracts, OAuth binding, and CALL-E business logic are deferred.
 
 ## Target Platforms
 
@@ -15,11 +15,11 @@ The adapter receives platform events, extracts platform identity, normalizes mes
 ## Repository Layout
 
 ```text
-docs/      Development plans and architecture notes
-examples/  Mock services and sanitized platform payloads
-pakages/   Package skeletons for contracts and adapters
+docs/      Development plans, platform notes, and setup records
+examples/  Sanitized platform payloads and later mock services
+pakages/   Existing package skeletons; adapter work is deferred
 scripts/   Local developer utilities
-test/      Tests while the repository is still small
+test/      Smoke checks while the repository is still small
 ```
 
 Note: `pakages/` is the current directory name. If it is renamed to `packages/`, update docs, imports, scripts, and CI in the same change.
