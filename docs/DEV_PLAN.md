@@ -128,7 +128,37 @@ Exit criteria:
 - CI passes on a clean checkout.
 - README documents local setup and supported platforms.
 
-## 5. Testing Plan
+## 5. Platform Bot Setup Plan
+
+This project must track the creation and configuration of each IM bot application, not only adapter code. Treat bot setup as a release prerequisite for each platform.
+
+### Shared Setup Requirements
+
+- Create the platform bot/app in the platform developer console.
+- Record required credentials in `.env.example` by name only.
+- Configure webhook or event callback URLs for local and deployed environments.
+- Enable only the minimum scopes needed for message receive, reply send, and interactive actions.
+- Document local tunneling requirements, for example `ngrok` or Cloudflare Tunnel.
+- Add a sanitized payload fixture after each event type is verified.
+
+### Platform Checklist
+
+| Platform | Setup Tasks | Required Validation |
+|-|-|-|
+| Discord | Create Discord application and bot user; enable interactions; configure slash commands; invite bot with message and command permissions. | Mention and slash command reach the adapter; buttons render; bot messages are ignored. |
+| Slack | Create Slack app; enable Events API, slash commands, interactivity, and required bot scopes; install to workspace. | URL verification passes; event and action signatures verify; adapter responds within Slack timing limits. |
+| Feishu / Lark | Create internal app; enable message events and card callbacks; configure event subscription and app permissions. | Message event reaches webhook; open_id, chat_id, and message_id normalize correctly; interactive card callback works. |
+| Telegram | Create bot with BotFather; configure webhook; decide privacy mode for groups; define inline keyboard behavior. | Text updates reach webhook; user_id and chat_id normalize correctly; inline keyboard callback works. |
+| iMessage | Select implementation approach and deployment host; define phone/handle identity fallback; document operational limits. | Plain text receive/send works in the target environment; fallback identity is stable enough for Bridge binding. |
+
+### Setup Deliverables
+
+- `docs/platform-notes/<platform>.md` with app creation steps, scopes, webhook settings, and risks.
+- `examples/payloads/<platform>-*.json` sanitized fixtures.
+- `.env.example` entries for required variables.
+- Adapter smoke test against `examples/bridge-mock`.
+
+## 6. Testing Plan
 
 ### Test Layers
 
@@ -179,7 +209,7 @@ npm run lint
 
 All milestone PRs should include the relevant command output in the PR description.
 
-## 6. Implementation Rules
+## 7. Implementation Rules
 
 - Keep adapters thin: `platform event -> InboundIMMessage` and `BridgeReply -> platform message`.
 - Do not store CALL-E OAuth tokens in adapter packages.
@@ -189,7 +219,7 @@ All milestone PRs should include the relevant command output in the PR descripti
 - Use `correlationId` across adapter logs and Bridge calls.
 - Provide text fallback for every interactive reply type.
 
-## 7. Changelog Process
+## 8. Changelog Process
 
 Every code or documentation change must update the changelog below in the same PR or commit. Add newest entries at the top.
 
@@ -205,7 +235,13 @@ Format:
 
 If no test command exists yet, write `Tested: not run; tooling not added yet`.
 
-## 8. Changelog
+## 9. Changelog
+
+### 2026-06-11 - Add Platform Bot Setup Plan
+
+- Changed: added explicit platform bot creation and configuration plan covering Discord, Slack, Feishu/Lark, Telegram, and iMessage; updated `.gitignore` to ignore generated Lark authorization QR images.
+- Tested: verified the section exists in the Feishu document at revision 15.
+- Notes: the same section was also added to the source Feishu project document.
 
 ### 2026-06-11 - Prepare Repository for Git
 
